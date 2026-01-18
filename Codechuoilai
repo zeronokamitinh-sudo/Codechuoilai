@@ -1,0 +1,197 @@
+-----------------------------------------------------------
+-- 0. KHỞI TẠO WHITE SCREEN (NẰM DƯỚI CÙNG TUYỆT ĐỐI)
+-----------------------------------------------------------
+local Player = game.Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+-- Xóa White Screen cũ nếu có
+if PlayerGui:FindFirstChild("AntiLag_BaseLayer") then
+    PlayerGui:FindFirstChild("AntiLag_BaseLayer"):Destroy()
+end
+
+local WS_Gui = Instance.new("ScreenGui")
+WS_Gui.Name = "AntiLag_BaseLayer"
+WS_Gui.DisplayOrder = -2147483648 -- Thấp nhất hệ thống
+WS_Gui.IgnoreGuiInset = true 
+WS_Gui.ResetOnSpawn = false
+WS_Gui.Parent = PlayerGui
+
+local WhiteFrame = Instance.new("Frame")
+WhiteFrame.Name = "WhiteBackground"
+WhiteFrame.Parent = WS_Gui
+WhiteFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+WhiteFrame.BorderSizePixel = 0
+WhiteFrame.Position = UDim2.new(0, 0, 0, 0)
+WhiteFrame.Size = UDim2.new(1, 0, 1, 0)
+WhiteFrame.ZIndex = -1
+
+-----------------------------------------------------------
+-- 1. KHỞI TẠO GUI CHÍNH (Banana Cat Hub)
+-----------------------------------------------------------
+if PlayerGui:FindFirstChild("BananaHub_LeaderboardFix") then
+    PlayerGui:FindFirstChild("BananaHub_LeaderboardFix"):Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+local MainFrame = Instance.new("Frame")
+local UICorner = Instance.new("UICorner")
+local BackgroundImg = Instance.new("ImageLabel")
+local Title = Instance.new("TextLabel")
+local InfoList = Instance.new("TextLabel")
+local ResetBtn = Instance.new("TextButton")
+local BtnCorner = Instance.new("UICorner")
+
+ScreenGui.Name = "BananaHub_LeaderboardFix"
+ScreenGui.Parent = PlayerGui
+ScreenGui.ResetOnSpawn = false
+
+-- [QUAN TRỌNG] Chỉnh DisplayOrder xuống số âm (-100) 
+-- Để các thông báo của Game (DisplayOrder thường = 0) hiện đè lên trên bảng này.
+ScreenGui.DisplayOrder = -100 
+
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, -300, 0.5, -140) 
+MainFrame.Size = UDim2.new(0, 600, 0, 280)
+MainFrame.ClipsDescendants = true 
+
+UICorner.CornerRadius = UDim.new(0, 20)
+UICorner.Parent = MainFrame
+
+BackgroundImg.Name = "BackgroundImg"
+BackgroundImg.Parent = MainFrame
+BackgroundImg.BackgroundTransparency = 1
+BackgroundImg.Size = UDim2.new(1, 0, 1, 0)
+BackgroundImg.Image = "rbxassetid://129345678273010" 
+BackgroundImg.ScaleType = Enum.ScaleType.Stretch
+BackgroundImg.ZIndex = 1
+
+Title.Name = "Title"
+Title.Parent = MainFrame
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0.05, 0, 0.08, 0)
+Title.Size = UDim2.new(0.9, 0, 0, 40)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Banana Cat Hub Auto Bounty"
+Title.TextColor3 = Color3.fromRGB(255, 255, 0)
+Title.TextSize = 28
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.ZIndex = 2
+
+InfoList.Name = "InfoList"
+InfoList.Parent = MainFrame
+InfoList.BackgroundTransparency = 1
+InfoList.Position = UDim2.new(0.05, 0, 0.28, 0)
+InfoList.Size = UDim2.new(0.9, 0, 0, 150)
+InfoList.Font = Enum.Font.GothamBold
+InfoList.TextColor3 = Color3.fromRGB(255, 255, 255)
+InfoList.TextSize = 20
+InfoList.TextXAlignment = Enum.TextXAlignment.Left
+InfoList.LineHeight = 1.2
+InfoList.ZIndex = 2
+
+ResetBtn.Name = "ResetBtn"
+ResetBtn.Parent = MainFrame
+ResetBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 0)
+ResetBtn.Position = UDim2.new(0.05, 0, 0.78, 0)
+ResetBtn.Size = UDim2.new(0, 120, 0, 35)
+ResetBtn.Text = "Reset"
+ResetBtn.Font = Enum.Font.GothamBold
+ResetBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+ResetBtn.TextSize = 18
+ResetBtn.ZIndex = 3
+
+BtnCorner.CornerRadius = UDim.new(0, 8)
+BtnCorner.Parent = ResetBtn
+
+-- Hiệu ứng nút Reset
+task.spawn(function()
+    while true do
+        local tween = game:GetService("TweenService"):Create(ResetBtn, TweenInfo.new(0.8, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {
+            BackgroundColor3 = Color3.fromRGB(255, 200, 0),
+            TextSize = 20
+        })
+        tween:Play()
+        break
+    end
+end)
+
+-----------------------------------------------------------
+-- LOGIC CẬP NHẬT THÔNG SỐ
+-----------------------------------------------------------
+local startTime = os.time()
+local bountyEarned = 0
+local totalBountyEarned = 0
+local lastBountyValue = nil
+
+local function getLeaderboardBounty()
+    local stats = Player:FindFirstChild("leaderstats")
+    if stats then
+        local b = stats:FindFirstChild("Bounty") or stats:FindFirstChild("Honor") or stats:FindFirstChild("Bounty/Honor")
+        if b and b:IsA("ValueBase") then return b.Value end
+    end
+    return 0
+end
+
+local function formatTime(s)
+    return string.format("%dh:%dm:%ds", s/3600, (s/60)%60, s%60)
+end
+
+lastBountyValue = getLeaderboardBounty()
+
+task.spawn(function()
+    while task.wait(1) do
+        local currentBounty = getLeaderboardBounty()
+        local clientTime = os.time() - startTime
+        if lastBountyValue ~= nil and currentBounty > lastBountyValue then
+            local gain = currentBounty - lastBountyValue
+            bountyEarned = bountyEarned + gain
+            totalBountyEarned = totalBountyEarned + gain
+        end
+        lastBountyValue = currentBounty
+        InfoList.Text = "Current Bounty: " .. currentBounty .. "$\n" ..
+                        "Bounty Earned: " .. bountyEarned .. "$\n" ..
+                        "Total Bounty Earned: " .. totalBountyEarned .. "$\n" ..
+                        "Client Time: " .. formatTime(clientTime)
+    end
+end)
+
+-- Logic nút Reset
+ResetBtn.MouseButton1Click:Connect(function()
+    bountyEarned = 0
+    startTime = os.time()
+    if Player.Character and Player.Character:FindFirstChild("Humanoid") then
+        Player.Character.Humanoid.Health = 0
+    end
+    ResetBtn.Text = "Dead!"
+    task.wait(1)
+    ResetBtn.Text = "Reset"
+end)
+
+-----------------------------------------------------------
+-- 2. DỌN DẸP GUI RÁC
+-----------------------------------------------------------
+task.spawn(function()
+    while task.wait(1) do
+        for _, p in pairs({game:GetService("CoreGui"), PlayerGui}) do
+            for _, v in pairs(p:GetDescendants()) do
+                if (v:IsA("TextLabel") or v:IsA("TextButton")) and (v.Text:find("Skip") or v.Text:find("Player")) then
+                    if not v:IsDescendantOf(ScreenGui) and not v:IsDescendantOf(WS_Gui) then 
+                        v.Visible = false 
+                    end
+                end
+            end
+        end
+        for _, v in pairs(game:GetService("CoreGui"):GetChildren()) do
+            if v:IsA("ScreenGui") and v.Name ~= "BananaHub_LeaderboardFix" and v.Name ~= "AntiLag_BaseLayer" and (v.Name:find("Banana") or v.Name:find("Hydra") or v.Name == "ScreenGui") then
+                v:Destroy()
+            end
+        end
+    end
+end)
+
+-----------------------------------------------------------
+-- 3. LOAD SCRIPT GỐC
+-----------------------------------------------------------
+loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/refs/heads/main/BananaCat-BountyEz.lua"))()
